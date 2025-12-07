@@ -1,18 +1,46 @@
 # Kankun KK-SP3 - Small K WiFi switch
+The "Kankun Smart Plug", also known as the "Huafeng WiFi Plug" is an inexpensive Wi-Fi controllable electric outlet.
+It has many models compatible with North American, European, Australian, and British plugs and outlets.
 
-Based on the [removed OpenWrt wiki page](https://openwrt.org/toh/kankun/kk-sp3?rev=1621192123).
+Inside this innocuous looking adapter you will find a Wi-Fi router running firmware based on [OpenWrt](https://openwrt.org).
+Its hardware is similar as the [TP-link TL-WR703N](https://openwrt.org/toh/tp-link/tl-wr703n) so you can install the vanilla OpenWrt instead of the original stock EOM firmware.
+The router is connected to a 10 Amper relay capable of handling 2,000 Watts.
+This device is totally hackable, and it has a full Linux inside!
 
-## Kankun KK-SP3
-* Similar hardware as the [TL-WR703N](https://openwrt.org/toh/tp-link/tl-wr703n).
-* The stock firmware is based on OpenWrt 14
-* Features:
-    * Atheros AR9330 rev 1 at 400MHz
-    * 4 MB flash memory
-    * 32 MB RAM
-    * 802.11 b/g/n
-    * Powered via AC line power
-    * 10A OMRON relay controlling AC power plug
-    * No native ethernet or USB ports
+There was Android and iOS apps to control this plug, but they don't work anymore.
+The Android app (in Chinese) could be found here: https://apkcombo.com/es/smartplug/hangzhou.kankun/
+The app demo https://www.youtube.com/watch?v=xsVjhS9BROM
+
+So you have to get a shell access and configure it manually. See the [Automation](#Automation) section below for alteratives to the official apps.
+
+
+## Features
+* Firmware: OpenWrt 14 Barrier Breaker r39365 TARGET="ar71xx/generic".
+* SoC: Atheros AR9330 rev 1 at 400MHz. See [datasheet](https://www.openhacks.com/uploadsproductos/ar9331_datasheet.pdf).
+* 4 MB flash memory.
+* 32 MB RAM Winbond W9425G6JH.
+* Wi-Fi 802.11 b/g/n.
+* No native ethernet or USB ports.
+* Powered via AC line power.
+* Relay controlling AC power plug: OMRON HF32F-G/012-H
+    * 10 Amperes or 2,200 Watts. **A fire may be caused by exceeding these limits. Especially during heat or summer.**
+    * Maximum DC switching voltage: 30V
+    * Maximum switching current: 10A
+    * Maximum switching power: 300W
+    * Nominal coil DC voltage: 12V
+    * Maximum coil voltage: -15.6V
+    * Coil resistance: 320 Ohms
+    * Coil power: 450mW
+
+> [!CAUTION]
+> A fire may be caused by exceeding 2,200 W. Especially during heat or summer.
+> See Maximum column in the [Power Consumption of Household Appliances](https://www.daftlogic.com/information-appliance-power-consumption.htm).
+> Especially don't use it for:
+> * Home Air Conditioner, Evaporative Air Conditioner, Space Heater;
+> * Boiler, Electric Oven, Hot Tub, Jacuzzi, Hot Water Immersion Heater, Hand Wash Oversink Water Heater, Power Shower;
+> * Steam Iron, Hair Dryer, Clothes Dryer;
+> * EV Car Charger;
+
 
 ## Photos
 <img width="640" height="480" alt="Kankun KK-SP3: back pins" src="https://github.com/user-attachments/assets/c06fec92-c45c-4a27-85ca-e9da46a2f567" />
@@ -33,22 +61,38 @@ The device consists of two main parts: a power outlet with a power supply and a 
 </details>
 
 
+## Significant safety issue!
+> [!CAUTION]
+> In the United States/North America version, the switch the *neutral* wire, instead of the *hot*!
+> This means that when they are turned off, the plugged-in device is still live and ready to shock you.
+> I'm guessing this is because they are a multi-country design, and they always switch the wire on the *left*.
+> This is correct for China/Australia but incorrect for North America; see the relevant pinouts:
+>
+> <img width="640" height="480" alt="Australian Socket-Outlet, Auto Switched" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Australian_Socket-Outlet%2C_Auto_Switched.jpg/1201px-Australian_Socket-Outlet%2C_Auto_Switched.jpg" />
+
+
 ## Factory Reset
-You can clear any existing settings and recover to the original factory settings by pressing and holding an almost-invisible white button on the surface of the plug for 4 seconds.
+You can clear any existing settings and recover the original factory settings.
+Press and hold an almost-invisible white button on the surface of the plug for 4 seconds.
 
-## Getting shell access
-Initially the device is preconfigured to act as an Wi-Fi Access Point (AP).
+
+## Connect to the device
+Initially the device is preconfigured to act as a Wi-Fi Access Point (AP).
 Connect to its Wi-Fi network with `OK_SP3` SSID name, it doesn't have a password (and encryption).
-Once connected see in the connection information the "IPv4 Default Gateway" i.e. an address of the socket's router. It should be `192.168.10.253`.
-You may even open it in a browser http://192.168.10.253 but there is no a web admin panel so you'll see an empty page "Index of /".
+Once connected, see in the connection information the "IPv4 Default Gateway" i.e., an address of the socket's router. It should be `192.168.10.253`.
+You may even open it in a browser http://192.168.10.253 but there is no a web admin panel, so you'll see an empty page `Index of /`.
 
-If you already don't have an RSA key for SSH then you'll need to generate it with `ssh-keygen -t rsa`.
+
+## Getting remote root shell access
+You can connect via telnet with user root without a password. But you better use SSH instead.
+
+If you already don't have an RSA key for SSH, then you'll need to generate it with `ssh-keygen -t rsa`.
 The device has an old Dropbear SSH server that uses old deprecated ciphers so the `ssh` command will fail:
 ```
 $ ssh root@192.168.10.253
 Unable to negotiate with 192.168.10.253 port 22: no matching key exchange method found. Their offer: diffie-hellman-group1-sha1,diffie-hellman-group14-sha1,kexguess2@matt.ucc.asn.au
 ```
-The best way is to add to `~/.ssh/config`:
+The best way is to add to `~/.ssh/config` the config that allows the legacy cipher algorithms:
 ```
 Host 192.168.10.253 kankun
   HostName 192.168.10.253
@@ -63,11 +107,39 @@ Host 192.168.10.253 kankun
 
 Now you can login remotely by `ssh root@192.168.10.253` or just `ssh kankun`.
 The default root password is `p9z34c`, `admin` or `1234`.
-Once you've gained root shell access, you can set up a key based authorization to avoid a password prompt next time.
-Use `ssh-copy-id -i ~/.ssh/id_rsa kankun` to install your key to`/etc/dropbear/authorized_keys`.
+
+
+
+### Install SSH key
+Once you've gained root shell access, you can set up a key-based authorization to avoid a password prompt next time.
+Use `ssh-copy-id -i ~/.ssh/id_rsa kankun` to append your key to Dropbear's `/etc/dropbear/authorized_keys`.
+
+### Change root password
+To avoid being hacked, you should change the default password with the `passwd` command:
+```
+# passwd
+Changing password for root
+New password:
+Retype password:
+Password for root changed by root
+```
 
 ## Configure the stock firmware
-### Network
+### Optional: Changing the hostname
+The default host name of the device is `koven`.
+Presumably if you have more than one of these, you may want to change the hostname so they're identifiable.
+```sh
+uci set system.hostname='koven'
+uci commit
+```
+Or edit the config file directly with `vi /etc/sysconfig/system` this section:
+```yaml
+config system
+    option hostname 'koven'
+```
+To exit the vim editor press `Esc` then type `wq!` and press `Enter`.
+
+### Set up network
 You probably want the device to act as a client in your existing Wi-Fi network:
 You'll need to change `/etc/config/network` and `/etc/config/wireless` with UCI.
 
@@ -102,11 +174,11 @@ config interface 'wwan'
 
 Edit the `/etc/config/wireless` and set your Wi-Fi network password (replace here `YourWifiSsid` and `YourWifiPassword`):
 ```sh
-uci set wireless.@wifi-iface[0].ssid=YourWifiSsid
-uci set wireless.@wifi-iface[0].key=YourWifiPassword
-uci set wireless.@wifi-iface[0].encryption=psk
-uci set wireless.@wifi-iface[0].network=wwan
-uci set wireless.@wifi-iface[0].mode=sta
+uci set wireless.@wifi-iface[0].ssid='YourWifiSsid'
+uci set wireless.@wifi-iface[0].key='YourWifiPassword'
+uci set wireless.@wifi-iface[0].encryption='psk2'
+uci set wireless.@wifi-iface[0].network='wwan'
+uci set wireless.@wifi-iface[0].mode='sta'
 uci commit
 ```
 
@@ -129,25 +201,28 @@ config wifi-iface
         option device   'radio0'
         option ssid     'YourWifiSsid'
         option key 'YourWifiPassword'
-        option encryption 'psk'
+        option encryption 'psk2'
         option network 'wwan'
         option mode 'sta'
 ```
 
-Note: the `option encryption 'psk'` means to use the old WPA encryption, so check that your router allows it.
-You may also need to set Wi-Fi "Encryption" setting from TKIP or AES to Auto. Similarly "Version" setting from WPA2-PSK to Auto.
+**Note:** If you used the `option encryption 'psk'` it means to use the old WPA encryption, so check that your router allows it.
+You may also need to set Wi-Fi "Encryption" setting from TKIP or AES to Auto. Similarly, the "Version" setting from WPA2-PSK to Auto.
 
 Once you changed the settings reboot the device with `reboot` and wait until it connects to your Wi-Fi network.
 Go to your router admin panel (usually http://192.168.1.1/ or http://192.168.0.1/) and find a new DHCP client in LAN.
-That should be the Kankun socket, copy its IP address.
+That should be the Kankun socket. We need to make it static by its MAC address.
+Go to the router DHCP client settings and set the static IP address e.g. `192.168.0.100`.
+
 Now go back to the `~/.ssh/config` and replace the old `192.168.10.253` IP with the new.
 Now you can check that you still connect to it with `ssh kankun`.
 
 ### Disable Kankun remote service
-The stock firmware includes a couple of processes (`kkeps_*`) that phone home to servers in China in order to offer cloud based access to the device through your smartphone.
-If you're keeping the stock firmware, consider disabling these in the startup script `/etc/rc.local` by commenting with `#`.
-
-Edit with `vi /etc/rc.local`:
+The stock firmware includes a couple of processes (`kkeps_*`) that phone home to servers in China in order to offer
+cloud-based access to the device through your smartphone.
+If you're keeping the stock firmware, consider disabling these in the startup script `/etc/rc.local`.
+You can replace the entire file with `echo 'exit 0' > /etc/rc.local`.
+Or you may comment out launching of the services with `#`. Edit with `vi /etc/rc.local`:
 ```sh
 # Put your custom commands here that should be executed once
 # the system init finished. By default this file does nothing.
@@ -159,46 +234,97 @@ Edit with `vi /etc/rc.local`:
 
 exit 0
 ```
-Or you can replace the entire file with `echo 'exit 0' > /etc/rc.local`.
 
 ## Operating the relay and LEDs
-Stock firmware:
-Turn ON:
+### Stock firmware
+The original image has a with GPIO named `relay` to toggle the relay and see its current state.
+
+Turn relay _ON_:
 ```sh
 echo 1 > /sys/class/leds/tp-link:blue:relay/brightness
 ```
-Turn OFF:
+Turn relay _OFF_:
 ```sh
 echo 0 > /sys/class/leds/tp-link:blue:relay/brightness
 ```
+See the current state:
+```sh
+cat /sys/class/leds/tp-link:blue:relay/brightness
+```
+The output `0` means _OFF_, the `1` means _ON_.
 
-OpenWrt 15.05:
-SETUP:
+When the relay is changed using this method, the official app will not track that change.
+The most visible result is that it may take more than one press of the physical button on the device to get the output to toggle.
+This is because the official app thinks that the output is already _ON_, so it turns it _OFF_, but it was already off.
+
+### Vanilla OpenWrt
+The OpenWrt 15.05 for the WR703N doesn't have the named `relay` LED for GPIO 26, and it's not defined in the BSP.
+
+Set up:
 ```sh
 echo 26 > /sys/class/gpio/export
 echo out > /sys/class/gpio/gpio26/direction
 ```
-Turn ON:
+**Note:** you should put the setup to `/etc/rc.local` to make sure it's done after the device boots.
+
+Turn relay _ON_:
 ```sh
 echo 1 > /sys/devices/virtual/gpio/gpio26/value
 ```
-Turn OFF:
+Turn relay _OFF_:
 ```sh
 echo 0 > /sys/devices/virtual/gpio/gpio26/value
 ```
 
+
+### LEDs configuration
+There is a configuration for `flashing` blue LED and `Relay` pseudo LED that controls the relay.
+See their config with `cat /etc/config/system`:
+```yaml
+config led
+    option name 'flashing'
+    option sysfs 'tp-link:blue:config'
+    option trigger 'timer'
+    option delayon '800'
+    option delayoff '800'
+
+config led
+    option name 'Relay'
+    option sysfs 'tp-link:blue:relay'
+    option trigger 'none'
+    option default '1'
+```
+
+The `flashing` LED (`system.@led[0]` in UCI) is used to just blink the blue LED each 800 milliseconds.
+The `Relay` pseudo LED (`system.@led[1]` in UCI) for the relay has default value `1` i.e. is _ON_.
+
+See [OpenWrt LED configuration](https://openwrt.org/docs/guide-user/base-system/led_configuration) for details.
+
+
 #### Power on reboot
-If you had a power outage then after electricity is back the relay will be OFF.
-The relay is tied to the red LED, so setting the LED to default ON will make the relay ON after bootup:
+Stopping the plug from turning on when it boots.
+If you had a power outage, then after electricity is back, the relay will be _ON_ by default.
+The relay is tied to the LED `flashing`, so setting the LED to default `0` will make the relay _OFF_ after bootup:
 ```sh
-uci set system.@led[1].default=1
+uci set system.@led[1].default=0
 uci commit system
 ```
-Note: During reboot from `reboot` command the relay will turned OFF.
+Check with `cat /etc/config/system`:
+```yaml
+config led
+  option name 'Relay'
+  option sysfs 'tp-link:blue:relay'
+  option trigger 'none'
+  option default '0'
+```
+
+To test it you can reboot the device with `reboot` command.
+**Note:** During reboot from `reboot` command the relay will turn _OFF_ anyway until booted again.
+
 
 #### Blue LED
 For the stock firmware, you can configure the LEDs to act on certain events.
-The blue LED just annoyingly blinking each 800ms. We can increase this interval:
+The blue LED `flashing` is annoyingly blinking each 800ms. We can increase this interval:
 ```sh
 uci set system.@led[0].delayon=20000
 uci commit system
@@ -215,41 +341,204 @@ uci commit system
 /etc/init.d/led restart
 ```
 
+
 ## Automation
-You can install a CGI script [kankun-json](https://github.com/homedash/kankun-json) to control light.
-There is also a small Web UI.
-The Home Assistant has a [module](https://www.home-assistant.io/integrations/kankun/) that use the CGI script.
-There is also another version of the script https://github.com/sean-/kankun
+### Using remote SSH command execution
+You can use ssh to remotely execute the command to switch the relay:
+
+Turn relay _ON_ on SSH host `kankun`:
+```sh
+ssh kankun 'echo 1 > /sys/class/leds/tp-link:blue:relay/brightness'
+```
+Turn relay _OFF_ on SSH host `kankun`:
+```sh
+ssh kankun 'echo 0 > /sys/class/leds/tp-link:blue:relay/brightness'
+```
+
+You can create a desktop shortcut to execute the command.
+
+### Android: Use Trigger app to remote SSH command execution
+The [Trigger](https://f-droid.org/packages/com.example.trigger/) initially was developed for locks and doors,
+but it can be used to control any device over SSH.
+Open the app and scan this QR code:
+
+
+You may edit the device's "lock" and change its IP address and SSH password if needed.
+
+### Install REST API
+It's recommended to install a CGI script [kankun-json](https://github.com/homedash/kankun-json) that provides an API over HTTP(S).
+It also has a small Web UI so you can control the light from your browser.
+
+[!kankun-json](https://camo.githubusercontent.com/0cf92e335e876977a02581f038ab4eb15758aae70519e2596c5bcded105c1cb3/68747470733a2f2f636c6475702e636f6d2f49575549416a7232704a2d3132303078313230302e706e67)
+
+* https://github.com/homedash/kankun-manager a full installer and configurer on Ansible.
+* [Change switch IP in the /www/switches.json when it changes](https://gist.github.com/ferstar/6ebad5e70e17a9f4c05dabed7bf79d7b)
+
+
+The Home Assistant has a [module](https://www.home-assistant.io/integrations/kankun/) that uses the CGI script.
+But you can also use the SSH command to control the light without installing anything on the device.
+
+There is also another version https://github.com/sean-/kankun. It's based on the `kankun-json` but looks older.
+
+https://github.com/CodeFoodPixels/kankun-setup CLI setup script. Connects through SSH to the plug,
+configures it to be on the Wi-Fi network specified, copies any files in the setup folder, restarts the plug, and then runs the `install.sh` file.
+
+Once you installed the CGI script for the REST API, you can use it with the same [Trigger](https://f-droid.org/packages/com.example.trigger/) app
+but also with any other app that supports HTTP requests, e.g. [HTTP Request Shortcuts](https://f-droid.org/packages/ch.rmy.android.http_shortcuts/).
+
+[Python script for remote control](https://drive.google.com/drive/u/2/folders/0B9JxR8qe_XORRWV0aHI5SXFYeTA)
+
+https://github.com/metalx1000/Kankun-Smart-GUI a simpler version of the `kankun-json`.
+
+[JSON API version of the relay.cgi](https://blog.donbowman.ca/wp-content/uploads/2018/01/json.cgi_.txt)
+
+
+#### relay.cgi
+The `kankun-json` is based on a simple `relay.cgi`. You can put the CGI script on the device to `/www/cgi-bin/relay.cgi` and make it executable with `chmod +x /www/cgi-bin/relay.cgi`:
+```sh
+#!/bin/sh
+echo "Content-Type: text/plain"
+echo "Cache-Control: no-cache, must-revalidate"
+echo "Expires: Sat, 26 Jul 1997 05:00:00 GMT"
+echo
+
+RELAY_CTRL=/sys/class/leds/tp-link:blue:relay/brightness
+
+case "$QUERY_STRING" in
+  state) 
+    case "`cat $RELAY_CTRL`" in
+      0) echo "OFF";;
+      1) echo "ON" ;;
+    esac;;
+  on) 
+    echo 1 > $RELAY_CTRL
+    echo ON;;
+  off) 
+    echo 0 > $RELAY_CTRL
+    echo OFF;;
+  toggle)
+    case "`cat $RELAY_CTRL`" in
+      0) echo 1 > $RELAY_CTRL
+         echo "ON";;
+      1) echo 0 > $RELAY_CTRL
+         echo "OFF" ;;
+    esac;;    
+esac
+```
+On Windows you can use [WinSCP](https://winscp.net/) to copy the file to the device.
+
+From any web browser connected to the plug, you can now issue commands to the smart plug. Change the IP address to the appropriate one for your device.
+
+* https://192.168.0.100/cgi-bin/relay.cgi?state will enquire whether the relay is on or off. Try it.
+* https://192.168.0.100/cgi-bin/relay.cgi?on will tell the smart plug to turn the relay on.
+* https://192.168.0.100/cgi-bin/relay.cgi?off will tell the smart plug to turn the relay off.
+* https://192.168.0.100/cgi-bin/relay.cgi?toggle will toggle the relay from on to off, or off to on.
+
+The original script was written by Konstantin Dondoshanskiy.
+
+
+### Configuring the plug in OpenHAB
+You maye use the [OpenHAB](https://www.openhab.org/) with [http binding](https://www.openhab.org/addons/bindings/http/).
+
+In the `default.items` file, you configure the switch with an HTTP binding by telling it what the URLs are for turning it on and off (change 192.168.0.100 to your switch's IP address):
+
+```
+Switch	KanKun1 "KanKun" (GF_Living) { http=">[ON:GET:http://192.168.0.100/cgi-bin/relay.cgi?on] >[OFF:GET:http://192.168.0.100/cgi-bin/relay.cgi?off]" }
+```
+Adding a switch to the `default.sitemap` is very simple:
+```
+Frame label="Switches" {
+    Switch item=KanKun1
+}
+```
+This should add the KanKun switch in OpenHAB.
+
+
+### Using native protocol
+**NOTE:** This is not recommended.
+You may try to control a Kankun Plug using the stock protocol, no hacks.
+* [Kankun controller](https://github.com/0x00string/kankuncontroller) a Python app
+* [Kankun plug gist for MacOS (OSX)](https://gist.github.com/oscarmorrison/6ebd9344e16448121ef4a5cdea1427b4) Python script using native protocol
+  Please let us know if this works and improve the instructions.
 
 
 ## Flashing to OpenWrt firmware
-Flashing stock OpenWrt from the shell using sysupgrade works fine. I used `openwrt-15.05.1-ar71xx-generic-tl-wr703n-v1-squashfs-sysupgrade.bin`.
+The original firmware is very outdated, and the Dropbear SSH server on it has some security vulnerability.
 
-**BEWARE**, there are problems however:
+Flashing stock OpenWrt from the shell using sysupgrade works fine.
+Confirmed to work with `openwrt-15.05.1-ar71xx-generic-tl-wr703n-v1-squashfs-sysupgrade.bin`.
+Newer OpenWrt images may be too big for the device with a small flash.
+
+**BEWARE**, there are problems:
 * The device has no ethernet port, so wireless must be enabled.
-* Stock openwrt firmware images has wireless disabled.
-  Theoretically `sysupgrade -c` should solve these problems, but for me 1 out of 3 Chaos Calmer upgrades failed to preserve /etc/config/wireless and all other changed config files, leaving the device unreachable.
+* Vanilla OpenWrt firmware images have wireless disabled.
 
-You might want to play around with sysupgrade `-l`, `-T` or `-i` to make sure your config files is preserved during upgrade. Perhaps `-b` and `-f` is the safest way.
+Theoretically `sysupgrade -c` should solve these problems,
+but for me 1 out of 3 Chaos Calmer upgrades failed to preserve `/etc/config/wireless` and other changed config files,
+leaving the device unreachable.
 
-Another option would be to use the OpenWrt firmware image builder, and customize the image to include a wireless configuration that's enabled by default. See the comments in https://plus.google.com/116498915170668533255/posts/U4RhQYRShB6. Flashing this custom image would be safer with regards to misbehaving `sysupgrade -c`.
+You might want to play around with sysupgrade `-l`, `-T` or `-i` to make sure your config files are preserved during upgrade.
+Perhaps `-b` and `-f` is the safest way.
+
+Another option would be to use the [OpenWrt firmware image builder](https://openwrt.org/docs/guide-developer/toolchain/beginners-build-guide)
+and customize the image to include a wireless configuration that's enabled by default.
+Flashing this custom image would be safer in regard to misbehaving `sysupgrade -c`.
 Use `-v` with `sysupgrade`, since that will tell you which files will be preserved.
 
-If the device has its wireless interface disabled, i.e. unreachable, you will have to pry open the case and solder cables to the serial headers on the pcb to fix it.
+If the device has its wireless interface disabled, i.e., unreachable,
+you will have to open the case and solder cables to the serial headers on the pcb to fix it.
 
-For more information, see https://plus.google.com/+MarcoTrevisan/posts/JWdsGkTU9ng and https://plus.google.com/108517425068864855690/posts/8unrogtCPFL
 
+See also:
+* [buildenv and quilt_rev10.txt](https://gist.github.com/andrewc12/21f92b64feaa0ce0763ea0b5439448a8) Build firmware for Kankun small k (KK-SP3) **EXPERIMENTAL!**
+* [Patch to enable the device support](https://gist.github.com/andrewc12/cb1ce8804629a2c6ce10a2b62bc4842a).
 
 ## Tags
 ar71xx AR9330 4Flash 32RAM 0port 0nic ath9k 802.11bgn wall_plug
+
 
 ## Manual
 
 <img width="1600" height="561" alt="Kankun KK-SP3 Manual" src="https://github.com/user-attachments/assets/b92f2c5e-1b76-421f-945f-6c9247b02217" />
 
-## Boot log (OpenWrt)
+Copied [from Dropbox](https://www.dropbox.com/s/8sq4caf2iivcmmc/manual-english.png?dl=0)
+
+
+## Articles and reviews
+* The page is based on the [removed OpenWrt wiki page](https://openwrt.org/toh/kankun/kk-sp3?rev=1621192123)
+* [More hacking to secure the gadget army the Kankun SP3](https://blog.donbowman.ca/2018/01/30/more-hacking-to-secure-the-gadget-army-the-kankun-sp3/)
+* [Cheap WIFI Switch review (KK-SP3)](https://mbarabasz.wordpress.com/2015/06/25/cheap-wifi-switch-review-kk-sp3/)
+* Unofficial [Kankun Blog](https://kankunblog.wordpress.com) Thoughts and rants for KanKun KK-SP3: mostly how to use the official app
+* [The Kankun Smart WiFi Plug/Outlet and ESP8266](http://benlo.com/esp8266/KankunSmartPlug.html) and [sources](https://github.com/GeoNomad/LuaLoader/tree/master/examples/Kankun%20WiFi%20Plug)
+* [Hacker News thread about the device](https://news.ycombinator.com/item?id=11952627)
+* [KanKun - WiFi розетка с управлением через интернет](https://zftlab.org/pages/2015081200.html)
+* mysku.ru: [WiFi розетка Kankun](http://mysku.ru/blog/china-stores/28305.html)
+* mysku.ru: [Умная розетка от Сяоми – версия номер 2](http://mysku.ru/blog/china-stores/40018.html)
+* [Wifi розетка KanKun](http://www.wofc.ru/kankun.html)
+* [Hacking Kankun Smart Wifi Plug](http://www.anites.com/2015/01/hacking-kankun-smart-wifi-plug.html)
+* ☠️ [Getting Started With The Kankun Small K / KK-SP3](http://homedash.org/2014/08/28/getting-started-with-the-kankun-small-k-kk-sp3/)
+* ☠️ [Kankun Firmware Downloads](https://homedash.org/2014/09/21/firmware-downloads/)
+* hfuller: [Kankun Plug hacking](https://256.makerslocal.org/wiki/Kankun_Plug)
+* [闲鱼买了两kk-sp3插座](https://blog.ferstar.org/post/hacking-kankun-smart-wifi-plug/)
+* CNX-Software: [Kankun KK-SP3 Wi-Fi Smart Socket Hacked, Based on Atheros AR9331, Running OpenWRT](https://www.cnx-software.com/2014/07/28/kankun-kk-sp3-wi-fi-smart-socket-hacked-based-on-atheros-ar9331-running-openwrt/)
+* YouTube
+  * "How to Linux": 
+    * [Finding IP of Kankun KK-SP3 WiFi smart plug in router](https://www.youtube.com/watch?v=Rc4PG0jxX8o)
+    * [Webserver](https://www.youtube.com/watch?v=qpc3ZJiN-JQ)
+    * [Commandline Hack](https://www.youtube.com/watch?v=yVysjg2lEqQ)
+  * [Обзор Kankun Smart Plug Socket Wi-Fi Умной интернет розетки](https://www.youtube.com/watch?v=_bRHiE1qKzg)
+  * [WidgetKK for SmartPlug](https://www.youtube.com/@ChopLabalagun/search?query=kankun)
+
+
+## Alternative sockets
+* Orvibo S20 socket
+  * [Reverse engineering Orvibo S20 socket](https://stikonas.eu/wordpress/2015/02/24/reverse-engineering-orvibo-s20-socket/)
+  * https://github.com/fernadosilva/orvfms Web interface for the Orvibo S20 socket
+
+
+## Boot log
 <details>
-  <summary>Boot log</summary>
+  <summary>Boot log of stock firmware (OpenWrt)</summary>
 
 ```
 Dec 16 01:17:49 ÿ
