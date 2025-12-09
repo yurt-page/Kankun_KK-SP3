@@ -1,5 +1,5 @@
-# Kankun KK-SP3 - Small K WiFi switch
-The "Kankun Smart Plug", also known as the "Huafeng WiFi Plug" is an inexpensive Wi-Fi controllable electric outlet.
+# Kankun KK-SP3 - Small K WiFi switch: Complete Guide
+The "Kankun Smart Plug", also known as the "Huafeng WiFi Plug" is an inexpensive Wi-Fi controllable electric socket.
 It has many models compatible with North American, European, Australian, and British plugs and outlets.
 
 Inside this innocuous looking adapter you will find a Wi-Fi router running firmware based on [OpenWrt](https://openwrt.org).
@@ -217,6 +217,7 @@ Go to the router DHCP client settings and set the static IP address e.g. `192.16
 Now go back to the `~/.ssh/config` and replace the old `192.168.10.253` IP with the new.
 Now you can check that you still connect to it with `ssh kankun`.
 
+
 ### Disable Kankun remote service
 The stock firmware includes a couple of processes (`kkeps_*`) that phone home to servers in China in order to offer
 cloud-based access to the device through your smartphone.
@@ -247,15 +248,30 @@ Turn relay _OFF_:
 ```sh
 echo 0 > /sys/class/leds/tp-link:blue:relay/brightness
 ```
+
+Toggle relay:
+```sh
+case "`cat /sys/class/leds/tp-link:blue:relay/brightness`" in 0) echo 1 > /sys/class/leds/tp-link:blue:relay/brightness;; 1) echo 0 > /sys/class/leds/tp-link:blue:relay/brightness;; esac
+````
+
+[!NOTE]
+> When the relay is changed using this method, the official app will not track that change.
+> As a result you'll need to press twice on the physical button on the device to get the output to toggle.
+> This is because the system and official app thinks that the output is already _ON_, so it turns it _OFF_, while it was already _OFF_.
+
+
+#### Get the socket state
 See the current state:
 ```sh
 cat /sys/class/leds/tp-link:blue:relay/brightness
 ```
 The output `0` means _OFF_, the `1` means _ON_.
 
-When the relay is changed using this method, the official app will not track that change.
-The most visible result is that it may take more than one press of the physical button on the device to get the output to toggle.
-This is because the official app thinks that the output is already _ON_, so it turns it _OFF_, but it was already off.
+For automation with the Trigger app (see bellow) use:
+```sh
+case "`cat /sys/class/leds/tp-link:blue:relay/brightness`" in 0) echo '"state":"open"';; 1) echo '"state":"closed"' ;; esac
+```
+
 
 ### Vanilla OpenWrt
 The OpenWrt 15.05 for the WR703N doesn't have the named `relay` LED for GPIO 26, and it's not defined in the BSP.
@@ -355,7 +371,29 @@ Turn relay _OFF_ on SSH host `kankun`:
 ssh kankun 'echo 0 > /sys/class/leds/tp-link:blue:relay/brightness'
 ```
 
+Toggle relay on SSH host `kankun`:
+```sh
+ssh kankun 'case "`cat /sys/class/leds/tp-link:blue:relay/brightness`" in 0) echo 1 > /sys/class/leds/tp-link:blue:relay/brightness;; 1) echo 0 > /sys/class/leds/tp-link:blue:relay/brightness;; esac'
+````
+
 You can create a desktop shortcut to execute the command.
+
+#### Linux: desktop shortcut
+Create launcher file `~/.local/share/applications/kankun-toggle.desktop`:
+```ini
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Toggle Outlet
+Icon=system-shutdown
+Exec=/usr/bin/ssh kankun 'case "`cat /sys/class/leds/tp-link:blue:relay/brightness`" in 0) echo 1 > /sys/class/leds/tp-link:blue:relay/brightness;; 1) echo 0 > /sys/class/leds/tp-link:blue:relay/brightness;; esac'
+Comment=Toggle KanKun relay ON or OFF
+Categories=Utility;Electronics;Internet
+Terminal=false
+```
+
+Now you can find in the Start menu "Toggle Outlet" and click it to toggle the relay.
+
 
 ### Android: Use Trigger app to remote SSH command execution
 The [Trigger app](https://f-droid.org/packages/com.example.trigger/) initially was developed for locks and doors,
@@ -366,15 +404,16 @@ Open the app and scan this QR code:
 
 You may edit the device's "lock" and change its IP address and SSH password if needed.
 
+
 ### Install REST API
 It's recommended to install a CGI script [kankun-json](https://github.com/homedash/kankun-json) that provides an API over HTTP(S).
 It also has a small Web UI so you can control the light from your browser.
 
 ![kankun-json web panel](https://camo.githubusercontent.com/0cf92e335e876977a02581f038ab4eb15758aae70519e2596c5bcded105c1cb3/68747470733a2f2f636c6475702e636f6d2f49575549416a7232704a2d3132303078313230302e706e67)
 
-* https://github.com/homedash/kankun-manager a full installer and configurer on Ansible.
+* https://github.com/homedash/kankun-manager a full installer and configurer with Ansible.
+* [Vanilla OpenWrt version of json.cgi](https://blog.donbowman.ca/wp-content/uploads/2018/01/json.cgi_.txt)
 * [Change switch IP in the /www/switches.json when it changes](https://gist.github.com/ferstar/6ebad5e70e17a9f4c05dabed7bf79d7b)
-
 
 The Home Assistant has a [module](https://www.home-assistant.io/integrations/kankun/) that uses the CGI script.
 But you can also use the SSH command to control the light without installing anything on the device.
@@ -390,8 +429,6 @@ but also with any other app that supports HTTP requests, e.g. [HTTP Request Shor
 [Python script for remote control](https://drive.google.com/drive/u/2/folders/0B9JxR8qe_XORRWV0aHI5SXFYeTA)
 
 https://github.com/metalx1000/Kankun-Smart-GUI a simpler version of the `kankun-json`.
-
-[JSON API version of the relay.cgi](https://blog.donbowman.ca/wp-content/uploads/2018/01/json.cgi_.txt)
 
 
 #### relay.cgi
@@ -428,12 +465,13 @@ esac
 ```
 On Windows you can use [WinSCP](https://winscp.net/) to copy the file to the device.
 
-From any web browser connected to the plug, you can now issue commands to the smart plug. Change the IP address to the appropriate one for your device.
+Now you can issue commands to the smart plug from a web browser connected to the same network as the socket.
+Change the IP address (e.g. `192.168.0.100`) to the appropriate one for your device.
 
-* https://192.168.0.100/cgi-bin/relay.cgi?state will enquire whether the relay is on or off. Try it.
-* https://192.168.0.100/cgi-bin/relay.cgi?on will tell the smart plug to turn the relay on.
-* https://192.168.0.100/cgi-bin/relay.cgi?off will tell the smart plug to turn the relay off.
-* https://192.168.0.100/cgi-bin/relay.cgi?toggle will toggle the relay from on to off, or off to on.
+* https://192.168.0.100/cgi-bin/relay.cgi?state enquire whether the relay is _ON_ or _OFF_.
+* https://192.168.0.100/cgi-bin/relay.cgi?on turn the relay _ON_.
+* https://192.168.0.100/cgi-bin/relay.cgi?off turn the relay _OFF_.
+* https://192.168.0.100/cgi-bin/relay.cgi?toggle toggle the relay from _ON_ to _OFF_, or _OFF_ to _ON_.
 
 The original script was written by Konstantin Dondoshanskiy.
 
@@ -456,14 +494,19 @@ This should add the KanKun switch in OpenHAB.
 
 
 ### Using native protocol
-**NOTE:** This is not recommended.
+[!WARNING]
+> This is not recommended and may not work anymore.
+> Please let us know if this works and improve the instructions.
+
 You may try to control a Kankun Plug using the stock protocol, no hacks.
 * [Kankun controller](https://github.com/0x00string/kankuncontroller) a Python app
-* [Kankun plug gist for MacOS (OSX)](https://gist.github.com/oscarmorrison/6ebd9344e16448121ef4a5cdea1427b4) Python script using native protocol
-  Please let us know if this works and improve the instructions.
+* [Kankun plug gist for MacOS (OSX)](https://gist.github.com/oscarmorrison/6ebd9344e16448121ef4a5cdea1427b4) a Python script using native protocol
 
 
 ## Flashing to OpenWrt firmware
+[!WARNING]
+> Unless you really need it don't do this.
+
 The original firmware is very outdated, and the Dropbear SSH server on it has some security vulnerability.
 
 Flashing stock OpenWrt from the shell using sysupgrade works fine.
@@ -489,13 +532,9 @@ Use `-v` with `sysupgrade`, since that will tell you which files will be preserv
 If the device has its wireless interface disabled, i.e., unreachable,
 you will have to open the case and solder cables to the serial headers on the pcb to fix it.
 
-
 See also:
 * [buildenv and quilt_rev10.txt](https://gist.github.com/andrewc12/21f92b64feaa0ce0763ea0b5439448a8) Build firmware for Kankun small k (KK-SP3) **EXPERIMENTAL!**
 * [Patch to enable the device support](https://gist.github.com/andrewc12/cb1ce8804629a2c6ce10a2b62bc4842a).
-
-## Tags
-ar71xx AR9330 4Flash 32RAM 0port 0nic ath9k 802.11bgn wall_plug
 
 
 ## Manual
@@ -506,29 +545,29 @@ Copied [from Dropbox](https://www.dropbox.com/s/8sq4caf2iivcmmc/manual-english.p
 
 
 ## Articles and reviews
-* The page is based on the [removed OpenWrt wiki page](https://openwrt.org/toh/kankun/kk-sp3?rev=1621192123)
+The page is based on the [removed OpenWrt wiki page](https://openwrt.org/toh/kankun/kk-sp3?rev=1621192123) and all of this articles:
+
 * [More hacking to secure the gadget army the Kankun SP3](https://blog.donbowman.ca/2018/01/30/more-hacking-to-secure-the-gadget-army-the-kankun-sp3/)
 * [Cheap WIFI Switch review (KK-SP3)](https://mbarabasz.wordpress.com/2015/06/25/cheap-wifi-switch-review-kk-sp3/)
 * Unofficial [Kankun Blog](https://kankunblog.wordpress.com) Thoughts and rants for KanKun KK-SP3: mostly how to use the official app
-* [The Kankun Smart WiFi Plug/Outlet and ESP8266](http://benlo.com/esp8266/KankunSmartPlug.html) and [sources](https://github.com/GeoNomad/LuaLoader/tree/master/examples/Kankun%20WiFi%20Plug)
+* [The Kankun Smart WiFi Plug/Outlet and ESP8266](https://benlo.com/esp8266/KankunSmartPlug.html) and [sources](https://github.com/GeoNomad/LuaLoader/tree/master/examples/Kankun%20WiFi%20Plug)
 * [Hacker News thread about the device](https://news.ycombinator.com/item?id=11952627)
 * [KanKun - WiFi розетка с управлением через интернет](https://zftlab.org/pages/2015081200.html)
 * mysku.ru: [WiFi розетка Kankun](http://mysku.ru/blog/china-stores/28305.html)
 * mysku.ru: [Умная розетка от Сяоми – версия номер 2](http://mysku.ru/blog/china-stores/40018.html)
 * [Wifi розетка KanKun](http://www.wofc.ru/kankun.html)
-* [Hacking Kankun Smart Wifi Plug](http://www.anites.com/2015/01/hacking-kankun-smart-wifi-plug.html)
-* ☠️ [Getting Started With The Kankun Small K / KK-SP3](http://homedash.org/2014/08/28/getting-started-with-the-kankun-small-k-kk-sp3/)
-* ☠️ [Kankun Firmware Downloads](https://homedash.org/2014/09/21/firmware-downloads/)
+* [Hacking Kankun Smart Wifi Plug](https://www.anites.com/2015/01/hacking-kankun-smart-wifi-plug.html)
 * hfuller: [Kankun Plug hacking](https://256.makerslocal.org/wiki/Kankun_Plug)
 * [闲鱼买了两kk-sp3插座](https://blog.ferstar.org/post/hacking-kankun-smart-wifi-plug/)
 * CNX-Software: [Kankun KK-SP3 Wi-Fi Smart Socket Hacked, Based on Atheros AR9331, Running OpenWRT](https://www.cnx-software.com/2014/07/28/kankun-kk-sp3-wi-fi-smart-socket-hacked-based-on-atheros-ar9331-running-openwrt/)
+* [Discussion of some of the security failings of the device, but also its official control protocol](https://mjg59.dreamwidth.org/43486.html)
 * YouTube
-  * "How to Linux": 
+  * "How to Linux" channel: 
     * [Finding IP of Kankun KK-SP3 WiFi smart plug in router](https://www.youtube.com/watch?v=Rc4PG0jxX8o)
     * [Webserver](https://www.youtube.com/watch?v=qpc3ZJiN-JQ)
     * [Commandline Hack](https://www.youtube.com/watch?v=yVysjg2lEqQ)
-  * [Обзор Kankun Smart Plug Socket Wi-Fi Умной интернет розетки](https://www.youtube.com/watch?v=_bRHiE1qKzg)
   * [WidgetKK for SmartPlug](https://www.youtube.com/@ChopLabalagun/search?query=kankun)
+  * [Обзор Kankun Smart Plug Socket Wi-Fi Умной интернет розетки](https://www.youtube.com/watch?v=_bRHiE1qKzg)
 
 
 ## Alternative sockets
@@ -726,3 +765,8 @@ Dec 16 01:18:14  ---------------------------------------------------
 Dec 16 01:18:18  root@koven:/#
 ```
 </details>
+
+
+## Tags
+ar71xx AR9330 4Flash 32RAM 0port 0nic ath9k 802.11bgn wall_plug
+
