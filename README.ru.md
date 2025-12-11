@@ -414,7 +414,7 @@ Exec=ssh kankun 'echo 0 > /sys/class/leds/tp-link:blue:relay/brightness'
 но его можно использовать для управления любым устройством по SSH.
 Откройте приложение и отсканируйте этот QR-код:
 
-![QR код для приложения Trigger чтобы добавить розетку Kankun](https://github.com/user-attachments/assets/60fc57fe-8ab6-4c7c-a5a0-e769e331f727)
+![QR код для приложения Trigger чтобы добавить розетку Kankun](https://github.com/user-attachments/assets/60300623-fc5a-43fc-ba93-fd73a1c3fd12)
 
 Вы можете изменить этот «замок» и изменить его IP-адрес и пароль SSH при необходимости.
 
