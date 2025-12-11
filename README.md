@@ -77,6 +77,7 @@ The device consists of two main parts: a power outlet with a power supply and a 
 ## Factory Reset
 You can clear any existing settings and recover the original factory settings.
 Press and hold an almost-invisible white button on the surface of the plug for 4 seconds.
+If the `OK_SP3` Wi-Fi network didn’t show then additionally make off/on for the socket.
 
 
 ## Connect to the device
