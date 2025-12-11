@@ -403,7 +403,7 @@ The [Trigger app](https://f-droid.org/packages/com.example.trigger/) initially w
 but it can be used to control any device over SSH.
 Open the app and scan this QR code:
 
-![QR code for Trigger to add Kankun plug](https://github.com/user-attachments/assets/60fc57fe-8ab6-4c7c-a5a0-e769e331f727)
+![QR code for Trigger to add Kankun plug](https://github.com/user-attachments/assets/60300623-fc5a-43fc-ba93-fd73a1c3fd12)
 
 You may edit the device's "lock" and change its IP address and SSH password if needed.
 
