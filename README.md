@@ -572,6 +572,12 @@ The page is based on the [removed OpenWrt wiki page](https://openwrt.org/toh/kan
     * [Finding IP of Kankun KK-SP3 WiFi smart plug in router](https://www.youtube.com/watch?v=Rc4PG0jxX8o)
     * [Webserver](https://www.youtube.com/watch?v=qpc3ZJiN-JQ)
     * [Commandline Hack](https://www.youtube.com/watch?v=yVysjg2lEqQ)
+  * Kris Occhipinti channel:
+      1. [BusyBox](https://www.youtube.com/watch?v=-Mk7RP1tTzo&pp=0gcJCSgKAYcqIYzv)
+      2. [HTTP Webserver](https://www.youtube.com/watch?v=D3P0gALPOvE)
+      3. [Trouble Shooting Linux Tutorial](https://www.youtube.com/watch?v=C4MYbV8Xjc4)
+      4. [Connect to Wi-Fi router SSH](https://www.youtube.com/watch?v=dOJdxb4aXjM)
+      5. [Custom GUI](https://www.youtube.com/watch?v=spPLbki3Gvo)
   * [WidgetKK for SmartPlug](https://www.youtube.com/@ChopLabalagun/search?query=kankun)
   * [Обзор Kankun Smart Plug Socket Wi-Fi Умной интернет розетки](https://www.youtube.com/watch?v=_bRHiE1qKzg)
 

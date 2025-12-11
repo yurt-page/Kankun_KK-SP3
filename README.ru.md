@@ -578,10 +578,16 @@ you will have to open the case and solder cables to the serial headers on the pc
 * CNX-Software: [Kankun KK-SP3 Wi-Fi Smart Socket Hacked, Based on Atheros AR9331, Running OpenWRT](https://www.cnx-software.com/2014/07/28/kankun-kk-sp3-wi-fi-smart-socket-hacked-based-on-atheros-ar9331-running-openwrt/)
 * [Discussion of some of the security failings of the device, but also its official control protocol](https://mjg59.dreamwidth.org/43486.html)
 * YouTube
-  * "How to Linux" channel: 
+  * Канал "How to Linux": 
     * [Finding IP of Kankun KK-SP3 WiFi smart plug in router](https://www.youtube.com/watch?v=Rc4PG0jxX8o)
     * [Webserver](https://www.youtube.com/watch?v=qpc3ZJiN-JQ)
     * [Commandline Hack](https://www.youtube.com/watch?v=yVysjg2lEqQ)
+  * Канал Kris Occhipinti:
+      1. [BusyBox](https://www.youtube.com/watch?v=-Mk7RP1tTzo&pp=0gcJCSgKAYcqIYzv)
+      2. [HTTP Webserver](https://www.youtube.com/watch?v=D3P0gALPOvE)
+      3. [Trouble Shooting Linux Tutorial](https://www.youtube.com/watch?v=C4MYbV8Xjc4)
+      4. [Connect to Wi-Fi router SSH](https://www.youtube.com/watch?v=dOJdxb4aXjM)
+      5. [Custom GUI](https://www.youtube.com/watch?v=spPLbki3Gvo)
   * [WidgetKK for SmartPlug](https://www.youtube.com/@ChopLabalagun/search?query=kankun)
   * [Обзор Kankun Smart Plug Socket Wi-Fi Умной интернет розетки](https://www.youtube.com/watch?v=_bRHiE1qKzg)
 
