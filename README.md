@@ -430,6 +430,9 @@ configures it to be on the Wi-Fi network specified, copies any files in the setu
 Once you installed the CGI script for the REST API, you can use it with the same [Trigger](https://f-droid.org/packages/com.example.trigger/) app
 but also with any other app that supports HTTP requests, e.g. [HTTP Request Shortcuts](https://f-droid.org/packages/ch.rmy.android.http_shortcuts/).
 
+For the Trigger app you can scan QR code:
+![QR code for Trigger to add Kankun switch with REST](./trigger_qr_rest.jpg)
+
 [Python script for remote control](https://drive.google.com/drive/u/2/folders/0B9JxR8qe_XORRWV0aHI5SXFYeTA)
 
 https://github.com/metalx1000/Kankun-Smart-GUI a simpler version of the `kankun-json`.

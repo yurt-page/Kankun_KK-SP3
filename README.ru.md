@@ -441,6 +441,9 @@ https://github.com/CodeFoodPixels/kankun-setup Скрипт настройки C
 После установки CGI-скрипта для REST API вы можете использовать его с тем же приложением [Trigger](https://f-droid.org/packages/com.example.trigger/),
 а также с любым другим приложением, поддерживающим HTTP-запросы, например, [HTTP Request Shortcuts](https://f-droid.org/packages/ch.rmy.android.http_shortcuts/).
 
+Для приложения Trigger вы можете QR код:
+![QR код для Trigger чтобы добавить розетку Kankun через REST](./trigger_qr_rest.jpg)
+
 [Скрипт на Python для удаленного управления](https://drive.google.com/drive/u/2/folders/0B9JxR8qe_XORRWV0aHI5SXFYeTA)
 
 https://github.com/metalx1000/Kankun-Smart-GUI — упрощённая версия `kankun-json`.
