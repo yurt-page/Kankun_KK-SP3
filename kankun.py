@@ -1,114 +1,210 @@
-#!/usr/bin/python
-import socket
-import fcntl
-import struct
-import urllib2
-import csv
-import sys
+#!/usr/bin/env python3
 import argparse
+import csv
 import os
+import socket
+import struct
+import sys
+from urllib.error import URLError, HTTPError
+from urllib.request import urlopen
 
-# Author: Yahya Khaled
-parser = argparse.ArgumentParser(description='Kankun automation')
-parser.add_argument('-l','--list', help='List Kankun devices on the network',required=False)
-parser.add_argument('-s','--switch',help='Issue switch command followed by on or off', required=False)
-parser.add_argument('-d','--device',help='Specify the device name specified in the relay.cgi script per device', required=False)
-args = parser.parse_args()
+try:
+    import fcntl  # POSIX only
+except ImportError:  # pragma: no cover
+    fcntl = None
 
 
-def get_ip_address(ifname):
+# Author: Yahya Khaled (original)
+# Python 3 port + fixes
+
+
+DEFAULT_TIMEOUT_SCAN_SECS = 0.15
+DEFAULT_TIMEOUT_HTTP_SECS = 5.0
+DEFAULT_PORT = 80
+
+
+def devices_list_path() -> str:
+    return os.path.join(os.path.expanduser("~"), ".kankun-devices.list")
+
+
+def get_ip_address(ifname: str) -> str:
+    """
+    Return IPv4 address for a given network interface (Linux/Unix).
+    """
+    if fcntl is None:
+        raise RuntimeError("Interface lookup via ioctl requires a POSIX system (fcntl not available).")
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
-
-
-
-def get_kankun_list():
-  local_ip = get_ip_address('eth0')
-  local_ip = local_ip.split('.')
-  kankun_list = []
-
-  for i in range(1,254):
-    socket.setdefaulttimeout(0.1)
-    s = socket.socket()
-    address = local_ip[0]+"."+local_ip[1]+"."+local_ip[2]+"."+str(i)
-    port = 80 # port number is a number, not string
     try:
-        s.connect((address, port))
-        response =  address, urllib2.urlopen("http://"+address+"/cgi-bin/relay.cgi?").read()
-        print response
-        kankun_list.append(("ip="+response[0], response[1].rstrip()))
-    except Exception, e:
-       # alert('something\'s wrong with %s:%d. Exception type is %s' % (address, port, `e`))
-       pass
+        ifname_b = ifname[:15].encode("utf-8", "ignore")
+        res = fcntl.ioctl(
+            s.fileno(),
+            0x8915,  # SIOCGIFADDR
+            struct.pack("256s", ifname_b),
+        )
+        return socket.inet_ntoa(res[20:24])
+    finally:
+        s.close()
 
 
-  with open(os.path.expanduser('~')+"/.kankun-devices.list",'w') as out:
-    csv_out=csv.writer(out)
-    for row in kankun_list:
-      csv_out.writerow(row)
+def http_get_text(url: str, timeout: float) -> str:
+    with urlopen(url, timeout=timeout) as resp:
+        data = resp.read()
+    # Devices typically return ASCII-ish payloads; be forgiving.
+    return data.decode("utf-8", errors="replace")
 
-def switch_kankun():
-  kankun_device_ip = []
-  kankun_device_response = []
-  kankun_csv = csv.reader(open(os.path.expanduser('~')+"/.kankun-devices.list"))
-  devicesCounter = 0
-  for row in kankun_csv:
-    kankun_device_ip.append(row[0])
-    kankun_device_response.append(row[1])
-    devicesCounter = devicesCounter + 1
 
-  if devicesCounter == 0:
-    print "Please try \"kankun -l list\" first"
-    exit(0)
-  if args.switch.lower() != "on" and args.switch.lower() != "off":
-    print "-s option can only be on or off."
-  else:
-    for index in range(len(kankun_device_response)):
-      if args.device.lower() in kankun_device_response[index].lower():
-         port = 80 # port number is a number, not string
-         socket.setdefaulttimeout(5)
-         s = socket.socket()
-         try:
-             s.connect((kankun_device_ip[index].split('ip=')[1], port))
-             response = urllib2.urlopen("http://"+kankun_device_ip[index].split('ip=')[1]+"/cgi-bin/relay.cgi?"+args.switch.lower()).read()
-             print response
-         except Exception, e:
-            #alert('something\'s wrong with %s:%d. Exception type is %s' % (kankun_device_ip[index].split('ip=')[1], port, `e`))
-            print "http Error, please update your list or check your spelling"
+def discover_kankun_devices(ifname: str) -> list[tuple[str, str]]:
+    """
+    Scan the /24 of the interface IP for Kankun devices by fetching /cgi-bin/relay.cgi?
+    Returns list of tuples: (ip=..., response_text)
+    """
+    local_ip = get_ip_address(ifname)
+    octets = local_ip.split(".")
+    if len(octets) != 4:
+        raise RuntimeError(f"Unexpected local IP format: {local_ip}")
 
-def status_kankun():
-  kankun_device_ip = []
-  kankun_device_response = []
-  kankun_csv = csv.reader(open(os.path.expanduser('~')+"/.kankun-devices.list"))
-  devicesCounter = 0
-  for row in kankun_csv:
-    kankun_device_ip.append(row[0])
-    kankun_device_response.append(row[1])
-    devicesCounter = devicesCounter + 1
+    prefix = ".".join(octets[:3])
+    found: list[tuple[str, str]] = []
 
-  if devicesCounter == 0:
-    print "Please try \"kankun -l list\" first"
-    exit(0)
-  for index in range(len(kankun_device_response)):
-    if args.device.lower() in kankun_device_response[index].lower():
-       port = 80 # port number is a number, not string
-       socket.setdefaulttimeout(5)
-       s = socket.socket()
-       try:
-           s.connect((kankun_device_ip[index].split('ip=')[1], port))
-           response = urllib2.urlopen("http://"+kankun_device_ip[index].split('ip=')[1]+"/cgi-bin/relay.cgi?").read()
-           print response
-       except Exception, e:
-          #alert('something\'s wrong with %s:%d. Exception type is %s' % (kankun_device_ip[index].split('ip=')[1], port, `e`))
-          print "http Error, please update your list or check your spelling"
+    for i in range(1, 254):
+        address = f"{prefix}.{i}"
+        url = f"http://{address}/cgi-bin/relay.cgi?"
+        try:
+            # Keep it fast while scanning; avoid separate TCP connect + HTTP fetch.
+            text = http_get_text(url, timeout=DEFAULT_TIMEOUT_SCAN_SECS).rstrip()
+            print((address, text))
+            found.append((f"ip={address}", text))
+        except (URLError, HTTPError, socket.timeout, OSError):
+            pass
 
-if args.list is not None:
-  get_kankun_list()
-elif args.device is not None and args.switch is not None:
-  switch_kankun()
-elif args.device is not None:
-  status_kankun()
+    return found
+
+
+def write_devices_list(rows: list[tuple[str, str]]) -> None:
+    path = devices_list_path()
+    with open(path, "w", newline="", encoding="utf-8") as out:
+        w = csv.writer(out)
+        for row in rows:
+            w.writerow(row)
+
+
+def read_devices_list() -> tuple[list[str], list[str]]:
+    path = devices_list_path()
+    if not os.path.exists(path):
+        return [], []
+
+    ips: list[str] = []
+    responses: list[str] = []
+    with open(path, "r", newline="", encoding="utf-8") as f:
+        for row in csv.reader(f):
+            if not row or len(row) < 2:
+                continue
+            ips.append(row[0])
+            responses.append(row[1])
+    return ips, responses
+
+
+def find_matching_devices(device_query: str, ips: list[str], responses: list[str]) -> list[tuple[str, str]]:
+    q = (device_query or "").lower()
+    matches: list[tuple[str, str]] = []
+    for ip_tag, resp in zip(ips, responses):
+        if q in (resp or "").lower():
+            matches.append((ip_tag, resp))
+    return matches
+
+
+def device_ip_from_tag(ip_tag: str) -> str:
+    # Stored as ip=1.2.3.4
+    if ip_tag.startswith("ip="):
+        return ip_tag.split("ip=", 1)[1]
+    return ip_tag
+
+
+def switch_kankun(device_query: str, state: str) -> None:
+    ips, responses = read_devices_list()
+    if not ips:
+        print('Please try "kankun -l" first', file=sys.stderr)
+        raise SystemExit(2)
+
+    matches = find_matching_devices(device_query, ips, responses)
+    if not matches:
+        print("No matching device found. Update your list (-l) or check your spelling.", file=sys.stderr)
+        raise SystemExit(2)
+
+    for ip_tag, _resp in matches:
+        ip = device_ip_from_tag(ip_tag)
+        url = f"http://{ip}/cgi-bin/relay.cgi?{state}"
+        try:
+            text = http_get_text(url, timeout=DEFAULT_TIMEOUT_HTTP_SECS)
+            print(text)
+        except (URLError, HTTPError, socket.timeout, OSError):
+            print("http Error, please update your list or check your spelling", file=sys.stderr)
+            raise SystemExit(2)
+
+
+def status_kankun(device_query: str) -> None:
+    ips, responses = read_devices_list()
+    if not ips:
+        print('Please try "kankun -l" first', file=sys.stderr)
+        raise SystemExit(2)
+
+    matches = find_matching_devices(device_query, ips, responses)
+    if not matches:
+        print("No matching device found. Update your list (-l) or check your spelling.", file=sys.stderr)
+        raise SystemExit(2)
+
+    for ip_tag, _resp in matches:
+        ip = device_ip_from_tag(ip_tag)
+        url = f"http://{ip}/cgi-bin/relay.cgi?"
+        try:
+            text = http_get_text(url, timeout=DEFAULT_TIMEOUT_HTTP_SECS)
+            print(text)
+        except (URLError, HTTPError, socket.timeout, OSError):
+            print("http Error, please update your list or check your spelling", file=sys.stderr)
+            raise SystemExit(2)
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Kankun automation (Python 3)")
+    # Keep backward-compatible flags:
+    # - old usage: -l list  (accepts optional value)
+    parser.add_argument("-l", "--list", nargs="?", const="list", default=None,
+                        help="List Kankun devices on the network (optionally: -l or -l list)")
+    parser.add_argument("-s", "--switch", choices=["on", "off"], required=False,
+                        help="Issue switch command: on or off")
+    parser.add_argument("-d", "--device", required=False,
+                        help="Substring to match device name returned by relay.cgi")
+    parser.add_argument("--ifname", default=os.environ.get("KANKUN_IFNAME", "eth0"),
+                        help="Network interface to scan (default: eth0 or $KANKUN_IFNAME)")
+
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+
+    if args.list is not None:
+        try:
+            rows = discover_kankun_devices(args.ifname)
+        except Exception as e:
+            print(f"Failed to scan devices: {e}", file=sys.stderr)
+            return 2
+        write_devices_list(rows)
+        return 0
+
+    if args.device is not None and args.switch is not None:
+        switch_kankun(args.device, args.switch)
+        return 0
+
+    if args.device is not None:
+        status_kankun(args.device)
+        return 0
+
+    # Nothing requested
+    print("Nothing to do. Use -l to scan, or -d DEVICE [-s on|off].", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
