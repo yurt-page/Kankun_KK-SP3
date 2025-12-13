@@ -263,7 +263,7 @@ case "`cat /sys/class/leds/tp-link:blue:relay/brightness`" in 0) echo 1 > /sys/c
 > В результате вам потребуется дважды нажать на физическую кнопку на устройстве, чтобы переключить выход.
 > Это происходит потому, что система и официальное приложение считают, что выход уже _ВКЛЮЧЁН_, поэтому они выключают его, хотя он уже был _ОТКЛЮЧЧЁН_.
 
-#### Получение состояния сокета
+#### Получение состояния розетки
 Просмотр текущего состояния:
 ```sh
 cat /sys/class/leds/tp-link:blue:relay/brightness
@@ -296,7 +296,7 @@ echo 0 > /sys/devices/virtual/gpio/gpio26/value
 ```
 
 
-### LEDs configuration
+### Настройка индикаторов
 There is a configuration for `flashing` blue LED and `Relay` pseudo LED that controls the relay.
 See their config with `cat /etc/config/system`:
 ```
@@ -314,8 +314,8 @@ config led
     option default '1'
 ```
 
-The `flashing` LED (`system.@led[0]` in UCI) is used to just blink the blue LED each 800 milliseconds.
-The `Relay` pseudo LED (`system.@led[1]` in UCI) for the relay has default value `1` i.e. is _ON_.
+Светодиод `flashing` LED (в UCI `system.@led[0]` используется чтобы просто мигать синим каждые 800 миллисекунд.
+Псевдо светодиод `Relay` LED (в UCI `system.@led[1]`) контролирует само реле и его значение по умолчанию `1` т.е. _ВКЛЮЧЕНО_.
 
 See [OpenWrt LED configuration](https://openwrt.org/docs/guide-user/base-system/led_configuration) for details.
 
@@ -416,7 +416,7 @@ Exec=ssh kankun 'echo 0 > /sys/class/leds/tp-link:blue:relay/brightness'
 но его можно использовать для управления любым устройством по SSH.
 Откройте приложение и отсканируйте этот QR-код:
 
-![QR код для приложения Trigger чтобы добавить розетку Kankun](https://github.com/user-attachments/assets/60300623-fc5a-43fc-ba93-fd73a1c3fd12)
+![QR код для приложения Trigger чтобы добавить розетку Kankun](./trigger_qr_ssh.gif)
 
 Вы можете изменить этот «замок» и изменить его IP-адрес и пароль SSH при необходимости.
 
@@ -507,10 +507,10 @@ Frame label="Switches" {
 This should add the KanKun switch in OpenHAB.
 
 
-### Using native protocol
+### Используя родной протокол
 
 > [!WARNING]
-> This is not recommended and may not work anymore.
+> Это не рекомендуется да и может уже не работать.
 > Please let us know if this works and improve the instructions.
 
 You may try to control a Kankun Plug using the stock protocol, no hacks.
@@ -518,10 +518,10 @@ You may try to control a Kankun Plug using the stock protocol, no hacks.
 * [Kankun plug gist for MacOS (OSX)](https://gist.github.com/oscarmorrison/6ebd9344e16448121ef4a5cdea1427b4) a Python script using native protocol
 
 
-## Flashing to OpenWrt firmware
+## Прошивание чистым OpenWrt
 
 > [!WARNING]
-> Unless you really need it don't do this.
+> Делайте это только если вам это действительно нужно.
 
 The original firmware is very outdated, and the Dropbear SSH server on it has some security vulnerability.
 
@@ -557,7 +557,7 @@ you will have to open the case and solder cables to the serial headers on the pc
 
 <img width="1600" height="561" alt="Kankun KK-SP3 Manual" src="https://github.com/user-attachments/assets/b92f2c5e-1b76-421f-945f-6c9247b02217" />
 
-Скопированно с [from Dropbox](https://www.dropbox.com/s/8sq4caf2iivcmmc/manual-english.png?dl=0)
+Скопировано с [from Dropbox](https://www.dropbox.com/s/8sq4caf2iivcmmc/manual-english.png?dl=0)
 
 
 ## Статьи и обзоры
@@ -598,7 +598,7 @@ you will have to open the case and solder cables to the serial headers on the pc
   * https://github.com/fernadosilva/orvfms Web interface for the Orvibo S20 socket
 
 
-## Журнал заггрузки
+## Журнал загрузки (boot log)
 <details>
   <summary>Журнал заггрузки оригинальной прошивки от производителя (OpenWrt)</summary>
 
